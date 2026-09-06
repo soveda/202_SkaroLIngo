@@ -133,5 +133,5 @@ controls:
           description: Shows drive in Performance mode, character in Modulation mode, and briefly flashes the selected voice character after a tap.
 
 uf2:
-  - path: build/skarolingo.uf2
+  - path: UF2/SkaroLIngo.uf2
     name: SkaroLIngo alpha firmware

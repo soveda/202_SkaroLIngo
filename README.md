@@ -19,7 +19,15 @@ cmake -S . -B build
 cmake --build build
 ```
 
-The build should produce `build/skarolingo.uf2`.
+If your shell has an old SDK path cached, point CMake at the local SDK:
+
+```sh
+PICO_SDK_PATH=/Users/adrianvos/coding/GitHub/pico-sdk cmake -S . -B build
+cmake --build build
+```
+
+The build should produce `build/skarolingo.uf2`. A built alpha binary is also
+included at `UF2/SkaroLIngo.uf2`.
 
 ## Patch
 
