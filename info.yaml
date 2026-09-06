@@ -1,0 +1,137 @@
+draft: true
+Name: SkaroLIngo
+short-description: MF-102-inspired voice ring modulator for the Workshop Computer.
+summary: |
+  Card 202: an MF-102-inspired voice ring modulator with a SkaroLIngo voice
+  character. Audio In 1 is the programme input and Audio In 2 can add an
+  external carrier; otherwise an internal carrier does the classic ring-mod
+  job. Switch Middle is the performance page with carrier frequency, dry/ring
+  mix, and drive. Switch Up edits the LFO rate, LFO depth, and
+  analogue-to-digital ring character. Tapping Switch Down cycles three voice
+  characters: Skaro, Mondas, and Hybrid.
+Language: C++ (Pico SDK)
+Creator: Adrian Vos
+Version: "0.1.0-alpha"
+Status: Alpha - generated scaffold, not yet hardware-tested
+License: MIT
+date-created: 2026-09-06
+date-updated: 2026-09-06
+Repository: ../202_SkaroLIngo
+contact: {}
+
+tags:
+  - ring-modulator
+  - voice
+  - effect
+  - dalek
+  - cybermen
+  - doctor-who
+
+panel:
+  inputs:
+    - id: AudioIn1
+      name: Programme Input
+      description: Main audio input sent through the ring modulator. Patch a voice here for the classic robot speech use.
+      type: audio
+    - id: AudioIn2
+      name: External Carrier
+      description: Optional audio-rate carrier/modulator summed with the internal oscillator after input conditioning.
+      type: audio
+    - id: CVIn1
+      name: Carrier Pitch CV
+      description: Bipolar CV added to the carrier frequency and LFO pitch bend.
+      type: cv
+    - id: CVIn2
+      name: Mix CV
+      description: Bipolar CV added to the dry/ring mix amount.
+      type: cv
+    - id: PulseIn1
+      name: LFO Reset
+      description: Rising edge resets the internal LFO phase.
+      type: pulse
+    - id: PulseIn2
+      name: Tremolo Gate
+      description: High gate applies the internal LFO as a tremolo over the wet mix amount.
+      type: pulse
+  outputs:
+    - id: AudioOut1
+      name: Main Output
+      description: Dry-to-ring-modulated mix of Audio In 1.
+      type: audio
+    - id: AudioOut2
+      name: Ring Only
+      description: Fully wet ring-modulated output for parallel patching.
+      type: audio
+    - id: CVOut1
+      name: LFO CV
+      description: Bipolar internal LFO output.
+      type: cv
+    - id: CVOut2
+      name: Carrier CV
+      description: Half-level carrier monitor as bipolar CV/audio-rate modulation.
+      type: cv
+    - id: PulseOut1
+      name: LFO Square
+      description: High for the positive half-cycle of the internal LFO.
+      type: pulse
+    - id: PulseOut2
+      name: Input Presence
+      description: High while the programme input is above the speech/activity threshold.
+      type: pulse
+
+controls:
+  switch:
+    middle:
+      name: Performance
+      description: MAIN sets carrier frequency, X sets dry/ring mix, and Y sets input/ring drive.
+    up:
+      name: Modulation / Character
+      description: MAIN sets LFO rate, X sets LFO depth into carrier frequency, and Y scans carrier shape plus analogue-to-digital ring character.
+    down:
+      name: Voice Character
+      description: Momentary tap cycles Skaro, Mondas, and Hybrid character modes. LED 5 flashes dim, medium, or bright to show the selected mode.
+  knobs:
+    - main:
+        name: Carrier Frequency
+        description: Tunes the internal carrier. CV In 1 and the LFO depth setting add pitch movement.
+      x:
+        name: Dry / Ring Mix
+        description: Fully CCW is dry Audio In 1, fully CW is wet ring modulation. CV In 2 offsets this live.
+      y:
+        name: Drive
+        description: Raises input and ring-stage drive, from clean carrier multiplication to saturated speech grit.
+    - when: { z: up }
+      main:
+        name: LFO Rate
+        description: Sets the internal LFO rate used for carrier wobble and Pulse Out 1.
+      x:
+        name: LFO Depth
+        description: Sets how deeply the LFO bends carrier frequency.
+      y:
+        name: Character
+        description: Scans round-to-square carrier shape and analogue-diode-to-digital-multiply ring behavior, with limits shaped by the selected voice character.
+  leds:
+    - display: list
+      items:
+        - id: "0"
+          name: Input Level
+          description: Brightness follows conditioned Audio In 1 level.
+        - id: "1"
+          name: Ring Level
+          description: Brightness follows the wet ring-modulated signal.
+        - id: "2"
+          name: Carrier Frequency
+          description: Shows the held carrier frequency setting.
+        - id: "3"
+          name: Mix
+          description: Shows the active dry/ring mix after CV modulation.
+        - id: "4"
+          name: LFO
+          description: Follows the internal LFO.
+        - id: "5"
+          name: Drive / Character / Voice
+          description: Shows drive in Performance mode, character in Modulation mode, and briefly flashes the selected voice character after a tap.
+
+uf2:
+  - path: build/skarolingo.uf2
+    name: SkaroLIngo alpha firmware
