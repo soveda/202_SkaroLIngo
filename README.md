@@ -80,6 +80,10 @@ LED 5 flashes dim, medium, or bright after a tap to show the selected character.
 
 - `ComputerCard.h` was copied from the newest visible release copy in
   `Workshop_Computer/releases` on 2026-09-06.
+- Code attribution is tracked in [ATTRIBUTION.md](ATTRIBUTION.md). In short:
+  ComputerCard is by Chris Johnson; `pico_sdk_import.cmake` is the Raspberry Pi
+  Pico SDK helper; and the ring-mod DSP approach adapts ideas from the MIT
+  licensed Alloy card in `Workshop_Computer/releases/97_alloy`.
 - Normalisation probing is not enabled in this first pass. Unpatched inputs are
   handled with DC blocking and a small dead zone, avoiding probe noise in the
   audio path.

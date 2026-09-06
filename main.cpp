@@ -1,6 +1,17 @@
 // SkaroLIngo - MF-102-inspired voice ring modulator for the Music Thing
 // Modular Workshop Computer.
 //
+// Copyright 2026 Adrian Vos. MIT licensed.
+//
+// Attribution:
+// - Built on ComputerCard by Chris Johnson, copied here as ComputerCard.h.
+// - The fixed-point analogue/digital ring-modulation approach is adapted from
+//   Alloy (`Workshop_Computer/releases/97_alloy/dsp/xmod_algorithms.h`), which
+//   itself documents its Mutable Instruments Warps/Parasites DSP lineage.
+// - The Pico SDK import helper is Raspberry Pi (Trading) Ltd. BSD-3-Clause
+//   code, included unchanged as pico_sdk_import.cmake.
+// See ATTRIBUTION.md for the fuller repository attribution notes.
+//
 // Audio In 1 is the programme input: voice, drum machine, radio, oscillator,
 // whatever you want to send into the modulator. Audio In 2 is an optional
 // external carrier. If nothing useful is patched there, the internal carrier

@@ -19,6 +19,12 @@ date-updated: 2026-09-06
 Repository: ../202_SkaroLIngo
 contact: {}
 
+attribution:
+  - ComputerCard.h copied from ComputerCard by Chris Johnson, version 0.3.0.
+  - pico_sdk_import.cmake copied from the Raspberry Pi Pico SDK helper, BSD-3-Clause notice retained in file.
+  - Fixed-point ring-modulation approach adapted from Workshop_Computer/releases/97_alloy, MIT licensed, which documents Mutable Instruments Warps/Parasites DSP lineage.
+  - Build and release structure follows Adrian Vos Workshop Computer release patterns and the Workshop Computer AI directive.
+
 tags:
   - ring-modulator
   - voice
