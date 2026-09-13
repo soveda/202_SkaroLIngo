@@ -174,7 +174,7 @@ public:
         if (PulseIn1RisingEdge())
         {
             lfoPhase_ = 0;
-            lfoResetFlash_ = 2400;
+            lfoResetFlash_ = 12000;
         }
 
         const bool characterPage = SwitchVal() == Switch::Up;
