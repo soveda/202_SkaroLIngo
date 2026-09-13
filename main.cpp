@@ -188,8 +188,14 @@ public:
             drive_ += (y - drive_) >> 8;
         }
 
-        int32_t input = inputBlock_.Process(AudioIn1());
-        int32_t externalCarrier = carrierBlock_.Process(AudioIn2());
+        const bool programmePatched = Connected(Input::Audio1);
+        const bool externalCarrierPatched = Connected(Input::Audio2);
+        // Hard-mute unpatched audio inputs. This is deliberately redundant
+        // with ComputerCard's probe handling: it keeps floating ADC residue
+        // out of the dry path on real hardware.
+        int32_t input = programmePatched ? inputBlock_.Process(AudioIn1()) : 0;
+        int32_t externalCarrier = externalCarrierPatched
+            ? carrierBlock_.Process(AudioIn2()) : 0;
 
         int32_t driveGain = 4096 + ((drive_ * 7) >> 2);
         input = skarolingo::SoftLimit((input * driveGain) >> 12);
@@ -222,7 +228,7 @@ public:
 
         // A patched Audio In 2 is the carrier, full stop. This avoids the
         // internal oscillator leaking through external-carrier patches.
-        int32_t carrier = Connected(Input::Audio2) ? externalCarrier : internalCarrier;
+        int32_t carrier = externalCarrierPatched ? externalCarrier : internalCarrier;
 
         int32_t analog = skarolingo::AnalogRing(input, carrier, drive_);
         int32_t digital = skarolingo::DigitalRing(input, carrier, drive_);
