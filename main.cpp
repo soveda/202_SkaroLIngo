@@ -14,8 +14,7 @@
 //
 // Audio In 1 is the programme input: voice, drum machine, radio, oscillator,
 // whatever you want to send into the modulator. Audio In 2 is an optional
-// external carrier. If nothing useful is patched there, the internal carrier
-// does the classic job.
+// external carrier which replaces the internal carrier when patched.
 //
 // Switch middle is the performance page:
 //   MAIN: carrier frequency
@@ -157,6 +156,11 @@ inline int32_t LevelToLed(int32_t x)
 class SkaroLIngo : public ComputerCard
 {
 public:
+    SkaroLIngo()
+    {
+        EnableNormalisationProbe();
+    }
+
     virtual void ProcessSample() override
     {
         if (startupSamples_ > 0)
@@ -227,11 +231,9 @@ public:
 
         int32_t internalCarrier = skarolingo::Crossfade(sine, square, skarolingo::Clamp(shape, 0, 4095));
 
-        // Audio In 2 is allowed to push the internal carrier around without
-        // becoming mandatory. A quiet/unpatched jack is removed by the DC
-        // blocker and dead zone above; a real oscillator gives the modulator
-        // a second, patchable life.
-        int32_t carrier = skarolingo::Clip(internalCarrier + (externalCarrier >> 1));
+        // A patched Audio In 2 is the carrier, full stop. This avoids the
+        // internal oscillator leaking through external-carrier patches.
+        int32_t carrier = Connected(Input::Audio2) ? externalCarrier : internalCarrier;
 
         int32_t analog = skarolingo::AnalogRing(input, carrier, drive_);
         int32_t digital = skarolingo::DigitalRing(input, carrier, drive_);

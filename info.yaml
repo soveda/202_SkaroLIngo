@@ -3,8 +3,8 @@ Name: SkaroLIngo
 short-description: MF-102-inspired voice ring modulator for the Workshop Computer.
 summary: |
   Card 202: an MF-102-inspired voice ring modulator with a SkaroLIngo voice
-  character. Audio In 1 is the programme input and Audio In 2 can add an
-  external carrier; otherwise an internal carrier does the classic ring-mod
+  character. Audio In 1 is the programme input and Audio In 2 can replace the
+  internal carrier; otherwise the internal carrier does the classic ring-mod
   job. Switch Middle is the performance page with carrier frequency, dry/ring
   mix, and drive. Switch Up edits the LFO rate, LFO depth, and
   analogue-to-digital ring character. Tapping Switch Down cycles three voice
@@ -41,7 +41,7 @@ panel:
       type: audio
     - id: AudioIn2
       name: External Carrier
-      description: Optional audio-rate carrier/modulator summed with the internal oscillator after input conditioning.
+      description: Optional audio-rate carrier/modulator. A patched signal replaces the internal oscillator.
       type: audio
     - id: CVIn1
       name: Carrier Pitch CV

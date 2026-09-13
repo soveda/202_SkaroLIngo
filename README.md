@@ -34,7 +34,7 @@ included at `UF2/SkaroLIngo.uf2`.
 | Jack | Function |
 | --- | --- |
 | Audio In 1 | Programme input: voice, drum, synth, radio |
-| Audio In 2 | Optional external carrier, summed with the internal carrier |
+| Audio In 2 | Optional external carrier; replaces the internal carrier when patched |
 | CV In 1 | Carrier pitch CV |
 | CV In 2 | Dry/ring mix CV |
 | Pulse In 1 | LFO reset |
