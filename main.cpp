@@ -106,11 +106,17 @@ inline int32_t Diode(int32_t x)
 
 inline int32_t AnalogRing(int32_t input, int32_t carrier, int32_t gain)
 {
+    // A clean four-quadrant multiply is the stable core of the effect. At
+    // sub-audio carrier rates it becomes the expected tremolo; higher rates
+    // create conventional ring modulation. Drive then introduces the diode
+    // character used by Alloy's attributed ring-mod implementation.
+    int32_t clean = (input * carrier) >> 11;
     int32_t c2 = carrier << 1;
     int32_t ring = Diode(input + c2) + Diode(input - c2);
     int32_t stageGain = 4096 + gain * 5;
     int32_t scaled = static_cast<int32_t>((static_cast<int64_t>(ring) * stageGain) >> 12);
-    return SoftLimit(scaled << 1);
+    int32_t diode = SoftLimit(scaled << 1);
+    return Crossfade(clean, diode, Clamp(gain, 0, kParamMax));
 }
 
 inline int32_t DigitalRing(int32_t input, int32_t carrier, int32_t gain)
@@ -168,6 +174,7 @@ public:
         if (PulseIn1RisingEdge())
         {
             lfoPhase_ = 0;
+            lfoResetFlash_ = 2400;
         }
 
         const bool characterPage = SwitchVal() == Switch::Up;
@@ -194,13 +201,19 @@ public:
         int32_t driveGain = 4096 + ((drive_ * 7) >> 2);
         input = skarolingo::SoftLimit((input * driveGain) >> 12);
 
-        lfoPhase_ += 20000u + static_cast<uint32_t>((lfoRate_ * lfoRate_) << 3);
+        // 0.05 Hz to about 20 Hz, with useful resolution at slow rates.
+        lfoPhase_ += 4500u + static_cast<uint32_t>(
+            (static_cast<int64_t>(lfoRate_) * lfoRate_ * 1800000) >> 24);
         int32_t lfo = skarolingo::Triangle(lfoPhase_);
-        int32_t lfoBend = (lfo * lfoDepth_) >> 7;
+        int32_t lfoBend = (lfo * lfoDepth_) >> 11;
 
         int32_t rangeShift = voice_ == 0 ? -1 : (voice_ == 1 ? 0 : 1);
         int32_t freqControl = skarolingo::Clamp(freq_ + (CVIn1() << 1) + lfoBend, 0, 4095);
-        int64_t step = 1800000 + ((static_cast<int64_t>(freqControl) * freqControl * 445000000) >> 24);
+        // The original alpha's floor was around 10 Hz in Skaro mode, which
+        // made its lowest setting an audible whine. This maps the bottom of
+        // the control to sub-audio rates, preserving the MF-102-like tremolo
+        // range before it rises into metallic ring modulation.
+        int64_t step = 22000 + ((static_cast<int64_t>(freqControl) * freqControl * 350000000) >> 24);
         if (rangeShift < 0) step >>= 1;
         if (rangeShift > 0) step <<= 1;
         carrierPhase_ += static_cast<uint32_t>(skarolingo::Clamp(static_cast<int32_t>(step), 400000, 900000000));
@@ -255,6 +268,11 @@ public:
             const int32_t levels[3] = {1000, 2450, 4095};
             LedBrightness(5, levels[voice_]);
         }
+        else if (lfoResetFlash_ > 0)
+        {
+            lfoResetFlash_--;
+            LedBrightness(5, 4095);
+        }
         else
         {
             LedBrightness(5, characterPage ? character_ : drive_);
@@ -281,6 +299,7 @@ private:
 
     int32_t startupSamples_ = 28800;
     int32_t voiceFlash_ = 0;
+    int32_t lfoResetFlash_ = 0;
     int32_t voice_ = 0;
 
     int32_t freq_ = 1700;
