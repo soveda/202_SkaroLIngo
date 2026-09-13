@@ -5,7 +5,7 @@ Card 202 for the Music Thing Modular Workshop Computer.
 SkaroLIngo is an MF-102-inspired voice ring modulator: patch speech or another
 programme signal into Audio In 1, tune the internal carrier until the sidebands
 start talking back, then use drive, mix, LFO and character controls to move
-between a sine-like and square-like internal carrier waveform.
+with a sine-like or square-like internal carrier and a morphable LFO waveform.
 
 The name nods to two famous metal-voice traditions from Doctor Who. The firmware
 is original and intentionally generic: a playable Workshop Computer ring
@@ -56,26 +56,26 @@ included at `UF2/SkaroLIngo.uf2`.
 | X | Dry/ring mix; soft pickup |
 | Y | Drive; soft pickup |
 
-### Switch Up: Modulation / Character
+### Switch Up: Modulation / LFO Waveform
 
-Switch Up temporarily applies its LFO and character settings. Returning to
+Switch Up temporarily applies its LFO pitch modulation. Returning to
 middle restores the stable performance sound.
 
 | Control | Function |
 | --- | --- |
 | Main | LFO rate, 0.1-25 Hz; soft pickup |
 | X | LFO depth into carrier frequency; soft pickup, fully CCW is off |
-| Y | Internal carrier waveform, sine-like to square-like; soft pickup |
+| Y | LFO waveform, sine-like to square-like; soft pickup |
 
-### Switch Down: Voice Character
+### Switch Down: Carrier Type
 
-Tap the spring-loaded switch down to cycle three characters:
+Tap the spring-loaded switch down to cycle three internal carrier types:
 
-| Character | Sound |
+| Carrier Type | Sound |
 | --- | --- |
 | Skaro | Sine-like carrier |
-| Mondas | Square-like carrier |
-| Hybrid | Halfway carrier waveform |
+| Mondas | Square carrier |
+| Hybrid | Halfway sine/square carrier |
 
 The internal carrier follows the MF-102 range: `0.6-80 Hz` over the lower half
 of Main and `80 Hz-4 kHz` over its upper half.

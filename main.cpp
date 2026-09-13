@@ -21,12 +21,12 @@
 //   X: dry/ring mix
 //   Y: input/ring drive
 //
-// Switch up is a temporary modulation/character mode:
+// Switch up is a temporary modulation/LFO-waveform mode:
 //   MAIN: LFO rate (0.1-25 Hz), soft pickup
 //   X: LFO depth into carrier frequency, soft pickup and hard zero at minimum
-//   Y: internal carrier waveform, sine-like through square-like, soft pickup
+//   Y: LFO waveform, sine-like through square-like, soft pickup
 //
-// Tap switch down to cycle three voice characters:
+// Tap switch down to cycle three internal carrier types:
 //   0 Skaro: sine-like carrier
 //   1 Mondas: square-like carrier
 //   2 Hybrid: halfway carrier waveform
@@ -113,6 +113,34 @@ inline int32_t CarrierPhaseStep(int32_t control)
     return table[index] + static_cast<int32_t>(
         (static_cast<int64_t>(table[index + 1] - table[index]) *
          (scaled & 4095)) >> 12);
+}
+
+// Converts a signed Q12 octave offset into a Q12 frequency multiplier. The
+// LFO amount is calibrated to +/-1.5 octaves at full scale: three octaves
+// peak-to-peak, matching the MF-102 specification.
+inline int32_t PitchMultiplierQ12(int32_t octavesQ12)
+{
+    static constexpr int32_t kOctave[17] = {
+        4096, 4277, 4467, 4664, 4871, 5087, 5312, 5547, 5793,
+        6049, 6317, 6597, 6889, 7194, 7512, 7845, 8192
+    };
+
+    bool negative = octavesQ12 < 0;
+    int32_t magnitude = negative ? -octavesQ12 : octavesQ12;
+    int32_t wholeOctaves = magnitude >> 12;
+    int32_t fraction = magnitude & 4095;
+    int32_t scaled = fraction << 4;
+    int32_t index = scaled >> 12;
+    int32_t multiplier = kOctave[index] + static_cast<int32_t>(
+        (static_cast<int64_t>(kOctave[index + 1] - kOctave[index]) *
+         (scaled & 4095)) >> 12);
+    multiplier <<= wholeOctaves;
+
+    if (negative)
+    {
+        return static_cast<int32_t>((static_cast<int64_t>(4096) * 4096) / multiplier);
+    }
+    return multiplier;
 }
 
 inline int32_t SoftLimit(int32_t x)
@@ -233,9 +261,9 @@ public:
                 lfoDepth_ += (x - lfoDepth_) >> 8;
             }
 
-            if (CaptureUpControl(y, character_, lastUpY_, characterPickedUp_))
+            if (CaptureUpControl(y, lfoWave_, lastUpY_, lfoWavePickedUp_))
             {
-                character_ += (y - character_) >> 8;
+                lfoWave_ += (y - lfoWave_) >> 8;
             }
         }
         else if (performancePage)
@@ -269,30 +297,32 @@ public:
         // 0.1 Hz to about 25 Hz, with useful resolution at slow rates.
         lfoPhase_ += 9000u + static_cast<uint32_t>(
             (static_cast<int64_t>(lfoRate_) * lfoRate_ * 2230000) >> 24);
-        int32_t lfo = skarolingo::Triangle(lfoPhase_);
-        // Middle is the stable performance sound. Up temporarily applies the
-        // LFO and character settings, so returning to middle restores it.
-        int32_t lfoBend = characterPage ? (lfo * lfoDepth_) >> 11 : 0;
+        int32_t lfoSine = skarolingo::Sineish(lfoPhase_);
+        int32_t lfoSquare = skarolingo::Square(lfoPhase_);
+        int32_t lfo = skarolingo::Crossfade(lfoSine, lfoSquare, lfoWave_);
 
-        int32_t freqControl = skarolingo::Clamp(freq_ + (CVIn1() << 1) + lfoBend, 0, 4095);
-        carrierPhase_ += static_cast<uint32_t>(skarolingo::CarrierPhaseStep(freqControl));
+        // Middle is the stable performance sound. Up applies LFO pitch
+        // modulation over a calibrated three-octave peak-to-peak span.
+        int32_t lfoPitchOctaves = characterPage
+            ? static_cast<int32_t>((static_cast<int64_t>(lfo) * lfoDepth_ * 3) / 4095)
+            : 0;
+
+        int32_t freqControl = skarolingo::Clamp(freq_ + (CVIn1() << 1), 0, 4095);
+        int32_t carrierStep = skarolingo::CarrierPhaseStep(freqControl);
+        carrierStep = static_cast<int32_t>(
+            (static_cast<int64_t>(carrierStep) *
+             skarolingo::PitchMultiplierQ12(lfoPitchOctaves)) >> 12);
+        carrierPhase_ += static_cast<uint32_t>(
+            skarolingo::Clamp(carrierStep, 1, 900000000));
 
         int32_t sine = skarolingo::Sineish(carrierPhase_);
         int32_t square = skarolingo::Square(carrierPhase_);
 
-        int32_t activeCharacter;
-        if (characterPage)
-        {
-            activeCharacter = character_;
-        }
-        else
-        {
-            const int32_t performanceCharacters[3] = {0, 3600, 2048};
-            activeCharacter = performanceCharacters[voice_];
-        }
+        const int32_t carrierTypes[3] = {0, 4095, 2048};
+        int32_t carrierShape = carrierTypes[voice_];
 
         int32_t internalCarrier = skarolingo::Crossfade(
-            sine, square, skarolingo::Clamp(activeCharacter, 0, 4095));
+            sine, square, skarolingo::Clamp(carrierShape, 0, 4095));
 
         // A patched Audio In 2 is the carrier, full stop. This avoids the
         // internal oscillator leaking through external-carrier patches.
@@ -335,7 +365,7 @@ public:
         }
         else
         {
-            LedBrightness(5, characterPage ? character_ : drive_);
+            LedBrightness(5, characterPage ? lfoWave_ : drive_);
         }
     }
 
@@ -347,7 +377,7 @@ private:
     {
         lfoRatePickedUp_ = false;
         lfoDepthPickedUp_ = false;
-        characterPickedUp_ = false;
+        lfoWavePickedUp_ = false;
         lastUpMain_ = main;
         lastUpX_ = x;
         lastUpY_ = y;
@@ -417,7 +447,7 @@ private:
     int32_t drive_ = 1300;
     int32_t lfoRate_ = 900;
     int32_t lfoDepth_ = 0;
-    int32_t character_ = 800;
+    int32_t lfoWave_ = 0;
 
     bool controlPageInitialized_ = false;
     int32_t lastUpMain_ = 0;
@@ -425,7 +455,7 @@ private:
     int32_t lastUpY_ = 0;
     bool lfoRatePickedUp_ = false;
     bool lfoDepthPickedUp_ = false;
-    bool characterPickedUp_ = false;
+    bool lfoWavePickedUp_ = false;
 
     int32_t lastPerformanceMain_ = 0;
     int32_t lastPerformanceX_ = 0;
