@@ -58,6 +58,9 @@ included at `UF2/SkaroLIngo.uf2`.
 
 ### Switch Up: Modulation / Character
 
+Switch Up temporarily applies its LFO and character settings. Returning to
+middle restores the stable performance sound.
+
 | Control | Function |
 | --- | --- |
 | Main | LFO rate |

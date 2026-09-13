@@ -21,7 +21,7 @@
 //   X: dry/ring mix
 //   Y: input/ring drive
 //
-// Switch up is the modulation/character page:
+// Switch up is a temporary modulation/character mode:
 //   MAIN: LFO rate
 //   X: LFO depth into carrier frequency
 //   Y: character, from round analogue saturation to harder digital multiply
@@ -204,7 +204,9 @@ public:
         lfoPhase_ += 4500u + static_cast<uint32_t>(
             (static_cast<int64_t>(lfoRate_) * lfoRate_ * 1800000) >> 24);
         int32_t lfo = skarolingo::Triangle(lfoPhase_);
-        int32_t lfoBend = (lfo * lfoDepth_) >> 11;
+        // Middle is the stable performance sound. Up temporarily applies the
+        // LFO and character settings, so returning to middle restores it.
+        int32_t lfoBend = characterPage ? (lfo * lfoDepth_) >> 11 : 0;
 
         int32_t rangeShift = voice_ == 0 ? -1 : (voice_ == 1 ? 0 : 1);
         int32_t freqControl = skarolingo::Clamp(freq_ + (CVIn1() << 1) + lfoBend, 0, 4095);
@@ -220,11 +222,21 @@ public:
         int32_t sine = skarolingo::Sineish(carrierPhase_);
         int32_t square = skarolingo::Square(carrierPhase_);
 
-        int32_t shape = character_;
-        if (voice_ == 0) shape = shape >> 2;
-        if (voice_ == 1) shape = 2600 + (shape >> 3);
+        int32_t activeCharacter;
+        if (characterPage)
+        {
+            activeCharacter = character_;
+            if (voice_ == 0) activeCharacter >>= 2;
+            if (voice_ == 1) activeCharacter = 3200 + (activeCharacter >> 3);
+        }
+        else
+        {
+            const int32_t performanceCharacters[3] = {0, 3600, 2048};
+            activeCharacter = performanceCharacters[voice_];
+        }
 
-        int32_t internalCarrier = skarolingo::Crossfade(sine, square, skarolingo::Clamp(shape, 0, 4095));
+        int32_t internalCarrier = skarolingo::Crossfade(
+            sine, square, skarolingo::Clamp(activeCharacter, 0, 4095));
 
         // A patched Audio In 2 is the carrier, full stop. This avoids the
         // internal oscillator leaking through external-carrier patches.
@@ -232,10 +244,8 @@ public:
 
         int32_t analog = skarolingo::AnalogRing(input, carrier, drive_);
         int32_t digital = skarolingo::DigitalRing(input, carrier, drive_);
-        int32_t ringMorph = character_;
-        if (voice_ == 0) ringMorph = ringMorph >> 2;
-        if (voice_ == 1) ringMorph = 3200 + (ringMorph >> 3);
-        int32_t ring = skarolingo::Crossfade(analog, digital, skarolingo::Clamp(ringMorph, 0, 4095));
+        int32_t ring = skarolingo::Crossfade(
+            analog, digital, skarolingo::Clamp(activeCharacter, 0, 4095));
 
         int32_t mixControl = skarolingo::Clamp(mix_ + CVIn2(), 0, 4095);
         if (PulseIn2())

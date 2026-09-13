@@ -92,7 +92,7 @@ controls:
       description: MAIN sets carrier frequency, X sets dry/ring mix, and Y sets input/ring drive.
     up:
       name: Modulation / Character
-      description: MAIN sets LFO rate, X sets LFO depth into carrier frequency, and Y scans carrier shape plus analogue-saturation-to-digital ring character.
+      description: Temporarily applies modulation/character mode: MAIN sets LFO rate, X sets LFO depth into carrier frequency, and Y scans carrier shape plus analogue-saturation-to-digital ring character. Returning to middle restores performance mode.
     down:
       name: Voice Character
       description: Momentary tap cycles Skaro, Mondas, and Hybrid character modes. LED 5 flashes dim, medium, or bright to show the selected mode.
