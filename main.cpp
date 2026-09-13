@@ -28,9 +28,9 @@
 //      soft pickup
 //
 // Tap switch down to cycle three voice characters:
-//   0 Skaro: lower range, rounder carrier, analogue saturation
-//   1 Mondas: mid range, squarer carrier, digital ring
-//   2 Hybrid: wide range, character knob scans the whole machine
+//   0 Skaro: rounder carrier, analogue saturation
+//   1 Mondas: squarer carrier, digital ring
+//   2 Hybrid: full character sweep
 
 #include <cstdint>
 
@@ -84,6 +84,36 @@ inline int32_t Square(uint32_t phase)
 inline int32_t Crossfade(int32_t a, int32_t b, int32_t amount)
 {
     return Clip((a * (kParamMax - amount) + b * amount) >> 12);
+}
+
+// Phase increments for logarithmically spaced MF-102 carrier frequencies at
+// 48 kHz: 0.6-80 Hz over control values 0-2047, then 80 Hz-4 kHz over
+// 2048-4095. Linear interpolation between table entries keeps the mapping
+// compact while retaining fine control at low rates.
+inline int32_t CarrierPhaseStep(int32_t control)
+{
+    static constexpr int32_t kLowRange[17] = {
+        53687, 72892, 98966, 134368, 182433, 247693, 336296, 456594,
+        619925, 841682, 1142764, 1551548, 2106560, 2860109, 3883213,
+        5272298, 7158279
+    };
+    static constexpr int32_t kHighRange[17] = {
+        7158279, 9141011, 11672929, 14906150, 19034922, 24307301,
+        31040046, 39637658, 50616675, 64636709, 82540076, 105402397,
+        134597227, 171878573, 219486273, 280280569, 357913941
+    };
+
+    control = Clamp(control, 0, kParamMax);
+    const int32_t *table = control <= 2047 ? kLowRange : kHighRange;
+    const int32_t position = control <= 2047 ? control : control - 2048;
+    constexpr int32_t kRangeSpan = 2047;
+    const int32_t scaled = static_cast<int32_t>(
+        (static_cast<int64_t>(position) * 16 * 4096) / kRangeSpan);
+    const int32_t index = scaled >> 12;
+    if (index >= 16) return table[16];
+    return table[index] + static_cast<int32_t>(
+        (static_cast<int64_t>(table[index + 1] - table[index]) *
+         (scaled & 4095)) >> 12);
 }
 
 inline int32_t SoftLimit(int32_t x)
@@ -254,16 +284,8 @@ public:
         // LFO and character settings, so returning to middle restores it.
         int32_t lfoBend = characterPage ? (lfo * lfoDepth_) >> 11 : 0;
 
-        int32_t rangeShift = voice_ == 0 ? -1 : (voice_ == 1 ? 0 : 1);
         int32_t freqControl = skarolingo::Clamp(freq_ + (CVIn1() << 1) + lfoBend, 0, 4095);
-        // The original alpha's floor was around 10 Hz in Skaro mode, which
-        // made its lowest setting an audible whine. This maps the bottom of
-        // the control to sub-audio rates, preserving the MF-102-like tremolo
-        // range before it rises into metallic ring modulation.
-        int64_t step = 22000 + ((static_cast<int64_t>(freqControl) * freqControl * 350000000) >> 24);
-        if (rangeShift < 0) step >>= 1;
-        if (rangeShift > 0) step <<= 1;
-        carrierPhase_ += static_cast<uint32_t>(skarolingo::Clamp(static_cast<int32_t>(step), 400000, 900000000));
+        carrierPhase_ += static_cast<uint32_t>(skarolingo::CarrierPhaseStep(freqControl));
 
         int32_t sine = skarolingo::Sineish(carrierPhase_);
         int32_t square = skarolingo::Square(carrierPhase_);

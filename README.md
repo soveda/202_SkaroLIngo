@@ -73,9 +73,12 @@ Tap the spring-loaded switch down to cycle three characters:
 
 | Character | Sound |
 | --- | --- |
-| Skaro | Lower range, rounder carrier, analogue saturation emphasis |
-| Mondas | Mid range, squarer carrier, digital multiply emphasis |
-| Hybrid | Wide range, full character sweep |
+| Skaro | Rounder carrier, analogue saturation emphasis |
+| Mondas | Squarer carrier, digital multiply emphasis |
+| Hybrid | Full character sweep |
+
+The internal carrier follows the MF-102 range: `0.6-80 Hz` over the lower half
+of Main and `80 Hz-4 kHz` over its upper half.
 
 LED 5 flashes dim, medium, or bright after a tap to show the selected character.
 

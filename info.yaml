@@ -99,7 +99,7 @@ controls:
   knobs:
     - main:
         name: Carrier Frequency
-        description: Soft-pickup control that tunes the internal carrier. CV In 1 and the LFO depth setting add pitch movement.
+        description: Soft-pickup control that tunes the internal carrier: 0.6-80 Hz over the lower half, then 80 Hz-4 kHz over the upper half. CV In 1 and the LFO depth setting add pitch movement.
       x:
         name: Dry / Ring Mix
         description: Soft-pickup control. Fully CCW is dry Audio In 1, fully CW is wet ring modulation. CV In 2 offsets this live.
