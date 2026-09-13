@@ -16,15 +16,16 @@
 // whatever you want to send into the modulator. Audio In 2 is an optional
 // external carrier which replaces the internal carrier when patched.
 //
-// Switch middle is the performance page:
+// Switch middle is the performance page, with soft pickup:
 //   MAIN: carrier frequency
 //   X: dry/ring mix
 //   Y: input/ring drive
 //
 // Switch up is a temporary modulation/character mode:
-//   MAIN: LFO rate
-//   X: LFO depth into carrier frequency
-//   Y: character, from round analogue saturation to harder digital multiply
+//   MAIN: LFO rate (0.1-25 Hz), soft pickup
+//   X: LFO depth into carrier frequency, soft pickup and hard zero at minimum
+//   Y: character, from round analogue saturation to harder digital multiply,
+//      soft pickup
 //
 // Tap switch down to cycle three voice characters:
 //   0 Skaro: lower range, rounder carrier, analogue saturation
@@ -158,12 +159,6 @@ public:
             return;
         }
 
-        if (SwitchVal() == Switch::Down && SwitchChanged())
-        {
-            voice_ = (voice_ + 1) % 3;
-            voiceFlash_ = 24000;
-        }
-
         if (PulseIn1RisingEdge())
         {
             lfoPhase_ = 0;
@@ -171,21 +166,72 @@ public:
         }
 
         const bool characterPage = SwitchVal() == Switch::Up;
+        const bool performancePage = SwitchVal() == Switch::Middle;
         const int32_t main = KnobVal(Knob::Main);
         const int32_t x = KnobVal(Knob::X);
         const int32_t y = KnobVal(Knob::Y);
+        const bool switchChanged = SwitchChanged();
+
+        if (SwitchVal() == Switch::Down && switchChanged)
+        {
+            voice_ = (voice_ + 1) % 3;
+            voiceFlash_ = 24000;
+        }
+
+        if (!controlPageInitialized_)
+        {
+            if (characterPage) ArmUpPickups(main, x, y);
+            else ArmPerformancePickups(main, x, y);
+            controlPageInitialized_ = true;
+        }
+        else if (characterPage && switchChanged)
+        {
+            ArmUpPickups(main, x, y);
+        }
+        else if (performancePage && switchChanged)
+        {
+            ArmPerformancePickups(main, x, y);
+        }
 
         if (characterPage)
         {
-            lfoRate_ += (main - lfoRate_) >> 8;
-            lfoDepth_ += (x - lfoDepth_) >> 8;
-            character_ += (y - character_) >> 8;
+            if (CaptureUpControl(main, lfoRate_, lastUpMain_, lfoRatePickedUp_))
+            {
+                lfoRate_ += (main - lfoRate_) >> 8;
+            }
+
+            // The very bottom of X is an unambiguous LFO-off position. It
+            // also arms pickup, so turning X up from zero responds normally.
+            if (x <= kLfoDepthOffThreshold)
+            {
+                lfoDepth_ = 0;
+                lfoDepthPickedUp_ = true;
+                lastUpX_ = x;
+            }
+            else if (CaptureUpControl(x, lfoDepth_, lastUpX_, lfoDepthPickedUp_))
+            {
+                lfoDepth_ += (x - lfoDepth_) >> 8;
+            }
+
+            if (CaptureUpControl(y, character_, lastUpY_, characterPickedUp_))
+            {
+                character_ += (y - character_) >> 8;
+            }
         }
-        else
+        else if (performancePage)
         {
-            freq_ += (main - freq_) >> 8;
-            mix_ += (x - mix_) >> 8;
-            drive_ += (y - drive_) >> 8;
+            if (CapturePerformanceControl(main, freq_, lastPerformanceMain_, freqPickedUp_))
+            {
+                freq_ += (main - freq_) >> 8;
+            }
+            if (CapturePerformanceControl(x, mix_, lastPerformanceX_, mixPickedUp_))
+            {
+                mix_ += (x - mix_) >> 8;
+            }
+            if (CapturePerformanceControl(y, drive_, lastPerformanceY_, drivePickedUp_))
+            {
+                drive_ += (y - drive_) >> 8;
+            }
         }
 
         const bool programmePatched = Connected(Input::Audio1);
@@ -200,9 +246,9 @@ public:
         int32_t driveGain = 4096 + ((drive_ * 7) >> 2);
         input = skarolingo::SoftLimit((input * driveGain) >> 12);
 
-        // 0.05 Hz to about 20 Hz, with useful resolution at slow rates.
-        lfoPhase_ += 4500u + static_cast<uint32_t>(
-            (static_cast<int64_t>(lfoRate_) * lfoRate_ * 1800000) >> 24);
+        // 0.1 Hz to about 25 Hz, with useful resolution at slow rates.
+        lfoPhase_ += 9000u + static_cast<uint32_t>(
+            (static_cast<int64_t>(lfoRate_) * lfoRate_ * 2230000) >> 24);
         int32_t lfo = skarolingo::Triangle(lfoPhase_);
         // Middle is the stable performance sound. Up temporarily applies the
         // LFO and character settings, so returning to middle restores it.
@@ -287,6 +333,56 @@ public:
     }
 
 private:
+    static constexpr int32_t kPickupThreshold = 64;
+    static constexpr int32_t kLfoDepthOffThreshold = 32;
+
+    void ArmUpPickups(int32_t main, int32_t x, int32_t y)
+    {
+        lfoRatePickedUp_ = false;
+        lfoDepthPickedUp_ = false;
+        characterPickedUp_ = false;
+        lastUpMain_ = main;
+        lastUpX_ = x;
+        lastUpY_ = y;
+    }
+
+    void ArmPerformancePickups(int32_t main, int32_t x, int32_t y)
+    {
+        freqPickedUp_ = false;
+        mixPickedUp_ = false;
+        drivePickedUp_ = false;
+        lastPerformanceMain_ = main;
+        lastPerformanceX_ = x;
+        lastPerformanceY_ = y;
+    }
+
+    bool CaptureUpControl(int32_t raw, int32_t held, int32_t &lastRaw,
+                          bool &pickedUp)
+    {
+        if (pickedUp)
+        {
+            lastRaw = raw;
+            return true;
+        }
+
+        const int32_t previousSide = lastRaw - held;
+        const int32_t currentSide = raw - held;
+        if (skarolingo::Abs(currentSide) <= kPickupThreshold ||
+            (previousSide < 0 && currentSide >= 0) ||
+            (previousSide > 0 && currentSide <= 0))
+        {
+            pickedUp = true;
+        }
+        lastRaw = raw;
+        return pickedUp;
+    }
+
+    bool CapturePerformanceControl(int32_t raw, int32_t held, int32_t &lastRaw,
+                                   bool &pickedUp)
+    {
+        return CaptureUpControl(raw, held, lastRaw, pickedUp);
+    }
+
     void ShowStartup()
     {
         constexpr int32_t kSamplesPerLed = 4800;
@@ -315,6 +411,21 @@ private:
     int32_t lfoRate_ = 900;
     int32_t lfoDepth_ = 0;
     int32_t character_ = 800;
+
+    bool controlPageInitialized_ = false;
+    int32_t lastUpMain_ = 0;
+    int32_t lastUpX_ = 0;
+    int32_t lastUpY_ = 0;
+    bool lfoRatePickedUp_ = false;
+    bool lfoDepthPickedUp_ = false;
+    bool characterPickedUp_ = false;
+
+    int32_t lastPerformanceMain_ = 0;
+    int32_t lastPerformanceX_ = 0;
+    int32_t lastPerformanceY_ = 0;
+    bool freqPickedUp_ = false;
+    bool mixPickedUp_ = false;
+    bool drivePickedUp_ = false;
 };
 
 int main()

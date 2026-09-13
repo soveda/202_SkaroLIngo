@@ -52,9 +52,9 @@ included at `UF2/SkaroLIngo.uf2`.
 
 | Control | Function |
 | --- | --- |
-| Main | Carrier frequency |
-| X | Dry/ring mix |
-| Y | Drive |
+| Main | Carrier frequency; soft pickup |
+| X | Dry/ring mix; soft pickup |
+| Y | Drive; soft pickup |
 
 ### Switch Up: Modulation / Character
 
@@ -63,9 +63,9 @@ middle restores the stable performance sound.
 
 | Control | Function |
 | --- | --- |
-| Main | LFO rate |
-| X | LFO depth into carrier frequency |
-| Y | Carrier shape and analogue-saturation-to-digital ring character |
+| Main | LFO rate, 0.1-25 Hz; soft pickup |
+| X | LFO depth into carrier frequency; soft pickup, fully CCW is off |
+| Y | Carrier shape and analogue-saturation-to-digital ring character; soft pickup |
 
 ### Switch Down: Voice Character
 

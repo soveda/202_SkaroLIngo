@@ -89,30 +89,30 @@ controls:
   switch:
     middle:
       name: Performance
-      description: MAIN sets carrier frequency, X sets dry/ring mix, and Y sets input/ring drive.
+      description: Soft-pickup performance controls: MAIN sets carrier frequency, X sets dry/ring mix, and Y sets input/ring drive.
     up:
       name: Modulation / Character
-      description: Temporarily applies modulation/character mode: MAIN sets LFO rate, X sets LFO depth into carrier frequency, and Y scans carrier shape plus analogue-saturation-to-digital ring character. Returning to middle restores performance mode.
+      description: Temporarily applies modulation/character mode with soft pickup: MAIN sets 0.1-25 Hz LFO rate, X sets LFO depth into carrier frequency (fully CCW is off), and Y scans carrier shape plus analogue-saturation-to-digital ring character. Returning to middle restores performance mode.
     down:
       name: Voice Character
       description: Momentary tap cycles Skaro, Mondas, and Hybrid character modes. LED 5 flashes dim, medium, or bright to show the selected mode.
   knobs:
     - main:
         name: Carrier Frequency
-        description: Tunes the internal carrier. CV In 1 and the LFO depth setting add pitch movement.
+        description: Soft-pickup control that tunes the internal carrier. CV In 1 and the LFO depth setting add pitch movement.
       x:
         name: Dry / Ring Mix
-        description: Fully CCW is dry Audio In 1, fully CW is wet ring modulation. CV In 2 offsets this live.
+        description: Soft-pickup control. Fully CCW is dry Audio In 1, fully CW is wet ring modulation. CV In 2 offsets this live.
       y:
         name: Drive
-        description: Raises input and ring-stage drive, from clean carrier multiplication to saturated speech grit.
+        description: Soft-pickup control that raises input and ring-stage drive, from clean carrier multiplication to saturated speech grit.
     - when: { z: up }
       main:
         name: LFO Rate
-        description: Sets the internal LFO rate used for carrier wobble and Pulse Out 1.
+        description: Soft-pickup control for the internal LFO rate, from 0.1 to 25 Hz, used for carrier wobble and Pulse Out 1.
       x:
         name: LFO Depth
-        description: Sets how deeply the LFO bends carrier frequency.
+        description: Soft-pickup control for LFO carrier-frequency depth. Fully CCW hard-sets the depth to zero.
       y:
         name: Character
         description: Scans round-to-square carrier shape and analogue-saturation-to-digital-multiply ring behavior, with limits shaped by the selected voice character.
