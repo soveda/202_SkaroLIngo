@@ -24,10 +24,10 @@
 // Switch up is the modulation/character page:
 //   MAIN: LFO rate
 //   X: LFO depth into carrier frequency
-//   Y: character, from round analogue diode ring to harder digital multiply
+//   Y: character, from round analogue saturation to harder digital multiply
 //
 // Tap switch down to cycle three voice characters:
-//   0 Skaro: lower range, rounder carrier, analogue ring
+//   0 Skaro: lower range, rounder carrier, analogue saturation
 //   1 Mondas: mid range, squarer carrier, digital ring
 //   2 Hybrid: wide range, character knob scans the whole machine
 
@@ -95,27 +95,16 @@ inline int32_t SoftLimit(int32_t x)
     return Clip((x - x3 / 3) >> 1);
 }
 
-inline int32_t Diode(int32_t x)
-{
-    int32_t sign = x < 0 ? -1 : 1;
-    int32_t d = Abs(x) - 205;
-    if (d < 0) return 0;
-    return sign * ((d * d) >> 13);
-}
-
 inline int32_t AnalogRing(int32_t input, int32_t carrier, int32_t gain)
 {
-    // A clean four-quadrant multiply is the stable core of the effect. At
-    // sub-audio carrier rates it becomes the expected tremolo; higher rates
-    // create conventional ring modulation. Drive then introduces the diode
-    // character used by Alloy's attributed ring-mod implementation.
+    // Both characters begin with a four-quadrant multiply. That guarantees
+    // silence when either input is silent, avoiding carrier feedthrough.
+    // This branch then adds rounded, analogue-style saturation.
     int32_t clean = (input * carrier) >> 11;
-    int32_t c2 = carrier << 1;
-    int32_t ring = Diode(input + c2) + Diode(input - c2);
-    int32_t stageGain = 4096 + gain * 5;
-    int32_t scaled = static_cast<int32_t>((static_cast<int64_t>(ring) * stageGain) >> 12);
-    int32_t diode = SoftLimit(scaled << 1);
-    return Crossfade(clean, diode, Clamp(gain, 0, kParamMax));
+    int32_t stageGain = 4096 + gain * 6;
+    int32_t saturated = SoftLimit(static_cast<int32_t>(
+        (static_cast<int64_t>(clean) * stageGain) >> 12));
+    return Crossfade(clean, saturated, Clamp(gain, 0, kParamMax));
 }
 
 inline int32_t DigitalRing(int32_t input, int32_t carrier, int32_t gain)

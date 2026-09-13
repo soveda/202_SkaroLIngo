@@ -5,7 +5,7 @@ Card 202 for the Music Thing Modular Workshop Computer.
 SkaroLIngo is an MF-102-inspired voice ring modulator: patch speech or another
 programme signal into Audio In 1, tune the internal carrier until the sidebands
 start talking back, then use drive, mix, LFO and character controls to move
-between rounded diode-ring clang and harder digital multiplication.
+between rounded saturated clang and harder digital multiplication.
 
 The name nods to two famous metal-voice traditions from Doctor Who. The firmware
 is original and intentionally generic: a playable Workshop Computer ring
@@ -62,7 +62,7 @@ included at `UF2/SkaroLIngo.uf2`.
 | --- | --- |
 | Main | LFO rate |
 | X | LFO depth into carrier frequency |
-| Y | Carrier shape and analogue-to-digital ring character |
+| Y | Carrier shape and analogue-saturation-to-digital ring character |
 
 ### Switch Down: Voice Character
 
@@ -70,7 +70,7 @@ Tap the spring-loaded switch down to cycle three characters:
 
 | Character | Sound |
 | --- | --- |
-| Skaro | Lower range, rounder carrier, analogue diode-ring emphasis |
+| Skaro | Lower range, rounder carrier, analogue saturation emphasis |
 | Mondas | Mid range, squarer carrier, digital multiply emphasis |
 | Hybrid | Wide range, full character sweep |
 
@@ -84,9 +84,8 @@ LED 5 flashes dim, medium, or bright after a tap to show the selected character.
   ComputerCard is by Chris Johnson; `pico_sdk_import.cmake` is the Raspberry Pi
   Pico SDK helper; and the ring-mod DSP approach adapts ideas from the MIT
   licensed Alloy card in `Workshop_Computer/releases/97_alloy`.
-- Normalisation probing is not enabled in this first pass. Unpatched inputs are
-  handled with DC blocking and a small dead zone, avoiding probe noise in the
-  audio path.
+- Normalisation probing is enabled so that an unpatched Audio In 2 reliably
+  selects the internal carrier, while a patched Audio In 2 replaces it.
 - The code runs from RAM and uses `PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64`, per
   the Workshop Computer AI directive.
-- This is alpha firmware and has not yet been tested on hardware.
+- This is alpha firmware undergoing hardware tests.
