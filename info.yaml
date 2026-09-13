@@ -7,7 +7,7 @@ summary: |
   internal carrier; otherwise the internal carrier does the classic ring-mod
   job. Switch Middle is the performance page with carrier frequency, dry/ring
   mix, and drive. Switch Up edits the LFO rate, LFO depth, and
-  analogue-saturation-to-digital ring character. Tapping Switch Down cycles three voice
+  internal carrier waveform. Tapping Switch Down cycles three voice
   characters: Skaro, Mondas, and Hybrid.
 Language: C++ (Pico SDK)
 Creator: Adrian Vos
@@ -92,7 +92,7 @@ controls:
       description: Soft-pickup performance controls: MAIN sets carrier frequency, X sets dry/ring mix, and Y sets input/ring drive.
     up:
       name: Modulation / Character
-      description: Temporarily applies modulation/character mode with soft pickup: MAIN sets 0.1-25 Hz LFO rate, X sets LFO depth into carrier frequency (fully CCW is off), and Y scans carrier shape plus analogue-saturation-to-digital ring character. Returning to middle restores performance mode.
+      description: Temporarily applies modulation/character mode with soft pickup: MAIN sets 0.1-25 Hz LFO rate, X sets LFO depth into carrier frequency (fully CCW is off), and Y morphs the internal carrier from sine-like to square-like. Returning to middle restores performance mode.
     down:
       name: Voice Character
       description: Momentary tap cycles Skaro, Mondas, and Hybrid character modes. LED 5 flashes dim, medium, or bright to show the selected mode.
@@ -115,7 +115,7 @@ controls:
         description: Soft-pickup control for LFO carrier-frequency depth. Fully CCW hard-sets the depth to zero.
       y:
         name: Character
-        description: Scans round-to-square carrier shape and analogue-saturation-to-digital-multiply ring behavior, with limits shaped by the selected voice character.
+        description: Soft-pickup sine-to-square morph for the internal carrier waveform.
   leds:
     - display: list
       items:

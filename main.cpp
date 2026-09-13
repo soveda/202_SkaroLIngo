@@ -5,8 +5,8 @@
 //
 // Attribution:
 // - Built on ComputerCard by Chris Johnson, copied here as ComputerCard.h.
-// - The fixed-point analogue/digital ring-modulation approach is adapted from
-//   Alloy (`Workshop_Computer/releases/97_alloy/dsp/xmod_algorithms.h`), which
+// - The fixed-point ring-modulation conventions were informed by Alloy
+//   (`Workshop_Computer/releases/97_alloy/dsp/xmod_algorithms.h`), which
 //   itself documents its Mutable Instruments Warps/Parasites DSP lineage.
 // - The Pico SDK import helper is Raspberry Pi (Trading) Ltd. BSD-3-Clause
 //   code, included unchanged as pico_sdk_import.cmake.
@@ -24,13 +24,12 @@
 // Switch up is a temporary modulation/character mode:
 //   MAIN: LFO rate (0.1-25 Hz), soft pickup
 //   X: LFO depth into carrier frequency, soft pickup and hard zero at minimum
-//   Y: character, from round analogue saturation to harder digital multiply,
-//      soft pickup
+//   Y: internal carrier waveform, sine-like through square-like, soft pickup
 //
 // Tap switch down to cycle three voice characters:
-//   0 Skaro: rounder carrier, analogue saturation
-//   1 Mondas: squarer carrier, digital ring
-//   2 Hybrid: full character sweep
+//   0 Skaro: sine-like carrier
+//   1 Mondas: square-like carrier
+//   2 Hybrid: halfway carrier waveform
 
 #include <cstdint>
 
@@ -128,23 +127,14 @@ inline int32_t SoftLimit(int32_t x)
 
 inline int32_t AnalogRing(int32_t input, int32_t carrier, int32_t gain)
 {
-    // Both characters begin with a four-quadrant multiply. That guarantees
-    // silence when either input is silent, avoiding carrier feedthrough.
-    // This branch then adds rounded, analogue-style saturation.
+    // Four-quadrant multiplication guarantees silence when either input is
+    // silent, avoiding carrier feedthrough. Saturation adds the analogue-style
+    // character without introducing an independent digital ring path.
     int32_t clean = (input * carrier) >> 11;
     int32_t stageGain = 4096 + gain * 6;
     int32_t saturated = SoftLimit(static_cast<int32_t>(
         (static_cast<int64_t>(clean) * stageGain) >> 12));
     return Crossfade(clean, saturated, Clamp(gain, 0, kParamMax));
-}
-
-inline int32_t DigitalRing(int32_t input, int32_t carrier, int32_t gain)
-{
-    int32_t ring = (input * carrier) >> 9;
-    int64_t g = (static_cast<int64_t>(ring) * (4096 + gain * 8)) >> 12;
-    int32_t r = Clamp(static_cast<int32_t>(g), -(1 << 24), (1 << 24));
-    int32_t mag = Abs(r);
-    return Clip((r * 2048) / (2048 + mag));
 }
 
 class DcBlock
@@ -294,8 +284,6 @@ public:
         if (characterPage)
         {
             activeCharacter = character_;
-            if (voice_ == 0) activeCharacter >>= 2;
-            if (voice_ == 1) activeCharacter = 3200 + (activeCharacter >> 3);
         }
         else
         {
@@ -310,10 +298,7 @@ public:
         // internal oscillator leaking through external-carrier patches.
         int32_t carrier = externalCarrierPatched ? externalCarrier : internalCarrier;
 
-        int32_t analog = skarolingo::AnalogRing(input, carrier, drive_);
-        int32_t digital = skarolingo::DigitalRing(input, carrier, drive_);
-        int32_t ring = skarolingo::Crossfade(
-            analog, digital, skarolingo::Clamp(activeCharacter, 0, 4095));
+        int32_t ring = skarolingo::AnalogRing(input, carrier, drive_);
 
         int32_t mixControl = skarolingo::Clamp(mix_ + CVIn2(), 0, 4095);
         if (PulseIn2())

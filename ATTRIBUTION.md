@@ -17,13 +17,13 @@ in Codex on 2026-09-06.
 
 ## Adapted Patterns
 
-- Ring-modulation DSP: `main.cpp` adapts the fixed-point digital multiplication
-  approach and Q12 sample conventions from
+- Ring-modulation DSP: `main.cpp` follows Alloy's Q12 sample conventions and
+  fixed-point cross-modulation approach from
   `/Users/adrianvos/coding/GitHub/Workshop_Computer/releases/97_alloy/dsp/xmod_algorithms.h`.
   Alloy is MIT licensed in its `info.yaml`. Its comments state that the
   algorithms are modelled on Mutable Instruments Warps/Parasites behavior and
-  rewritten in integer arithmetic for the RP2040. SkaroLIngo's saturated
-  character is an original post-multiply waveshaping stage.
+  rewritten in integer arithmetic for the RP2040. SkaroLIngo's saturated ring
+  stage and sine-to-square carrier morph are original implementations.
 
 - Build/release structure: `CMakeLists.txt`, `README.md`, and `info.yaml` follow
   the style of Adrian Vos Workshop Computer releases, especially
